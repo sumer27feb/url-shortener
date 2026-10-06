@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.links import Link
@@ -37,7 +37,22 @@ async def get_link_by_short_code(
         expires_at=link.expires_at,
         revoked_at=link.revoked_at,
         deleted_at=link.deleted_at,
-        max_clicks=link.max_clicks,
         click_count=link.click_count,
         password_hash=link.password_hash,
+    )
+
+async def update_click_count(
+        db:AsyncSession,
+        short_code: str,
+        click_count: int,
+) -> None:
+    await db.execute(
+        update(Link)
+        .where(Link.short_code == short_code)
+        .values(
+            click_count=func.greatest(
+                Link.click_count,
+                click_count,
+            )
+        )
     )

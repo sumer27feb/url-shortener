@@ -26,10 +26,6 @@ class Link(Base):
             "click_count >= 0",
             name="ck_links_click_count_nonnegative",
         ),
-        CheckConstraint(
-            "max_clicks IS NULL OR max_clicks >= 0",
-            name="ck_links_max_clicks_nonnegative",
-        ),
     )
 
     id: Mapped[int] = mapped_column(
@@ -82,11 +78,6 @@ class Link(Base):
         nullable=False,
         default=0,
         server_default="0",
-    )
-
-    max_clicks: Mapped[int | None] = mapped_column(
-        BigInteger,
-        nullable=True,
     )
 
     password_hash: Mapped[str | None] = mapped_column(

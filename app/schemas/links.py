@@ -6,7 +6,6 @@ class CreatedLinkRequest(BaseModel):
 
     custom_alias: str | None = None
     expires_at: datetime | None = None
-    max_clicks: int | None = None
     password: str | None = None
     campaign_name: str | None = None
 
@@ -23,7 +22,6 @@ class ResolvedLinkData(BaseModel):
     revoked_at: datetime | None = None
     deleted_at: datetime | None = None
 
-    max_clicks: int | None = None
     click_count: int
 
     password_hash: str | None = None

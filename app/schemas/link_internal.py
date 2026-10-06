@@ -10,6 +10,5 @@ class LinkCreateData(BaseModel):
     is_custom_alias: bool = False
 
     expires_at: datetime | None = None
-    max_clicks: int | None = None
     password_hash: str | None = None
     campaign_name: str | None = None
