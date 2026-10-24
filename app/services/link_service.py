@@ -5,6 +5,9 @@ from app.schemas.link_internal import LinkCreateData
 from app.schemas.links import CreatedLinkRequest
 from app.services.short_code_service import generate_short_code
 
+from anyio import to_thread
+from app.services.password_service import hash_password
+
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -51,19 +54,14 @@ def build_link_data(
     payload: CreatedLinkRequest,
     short_code: str,
     is_custom_alias: bool,
+    password_hash: str | None,
 ) -> LinkCreateData:
     return LinkCreateData(
         short_code=short_code,
         destination_url=str(payload.destination_url),
         is_custom_alias=is_custom_alias,
         expires_at=payload.expires_at,
-        max_clicks=payload.max_clicks,
-
-        # temporary for testing
-        password_hash=payload.password
-        if payload.password
-        else None,
-
+        password_hash=password_hash,
         campaign_name=payload.campaign_name,
     )
 
@@ -96,6 +94,15 @@ async def create_link(
     # Custom alias flow
     # ---------------------------------
 
+    password_hash = (
+    await to_thread.run_sync(
+        hash_password,
+        payload.password,
+    )
+    if payload.password is not None
+    else None
+)
+
     if payload.custom_alias:
         validate_custom_alias(payload.custom_alias)
 
@@ -105,6 +112,7 @@ async def create_link(
             payload=payload,
             short_code=short_code,
             is_custom_alias=True,
+            password_hash=password_hash,
         )
 
         try:
