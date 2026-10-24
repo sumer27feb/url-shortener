@@ -22,3 +22,4 @@ def home():
     return {"message" : "URL shortener server is running"}
 
 #python -m uvicorn app.main:app --reload
+#python -m app.workers.click_flush_worker

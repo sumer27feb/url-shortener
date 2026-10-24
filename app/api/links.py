@@ -1,12 +1,22 @@
 from fastapi import APIRouter, HTTPException, status, Depends
+from redis.asyncio import Redis
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.links import CreateLinkResponse, CreatedLinkRequest
+from app.schemas.link_stats import LinkStatsResponse
+from app.cache.redis import get_redis
+from app.db.session import get_db
 from app.services.link_service import (
     create_link as create_link_service,
     InvalidCustomAliasError,
     CustomAliasConflictError,
     ShortCodeGenerationError,
     LinkPersistenceError,
+)
+from app.services.link_stats_service import (
+    LinkStatsNotFoundError,
+    LinkStatsLookupError,
+    get_link_stats,
 )
 
 from sqlalchemy import text
@@ -61,6 +71,42 @@ async def create_link(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Could not create the short link right now. Please try again.",
         )
+
+
+@router.get(
+    "/{short_code}/stats",
+    response_model=LinkStatsResponse,
+)
+async def read_link_stats(
+    short_code: str,
+    db: AsyncSession = Depends(get_db),
+    redis: Redis = Depends(get_redis),
+) -> LinkStatsResponse:
+
+    try:
+        total_clicks = await get_link_stats(
+            short_code=short_code,
+            db=db,
+            redis=redis,
+        )
+
+    except LinkStatsNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Short link not found.",
+        )
+
+    except LinkStatsLookupError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Unable to retrieve link statistics right now.",
+        )
+
+    return LinkStatsResponse(
+        short_code=short_code.lower(),
+        total_clicks=total_clicks,
+    )
+
 
 @router.get("/db-test")
 async def db_test(

@@ -1,3 +1,4 @@
+
 from datetime import datetime, timezone
 
 from redis.asyncio import Redis
@@ -49,7 +50,6 @@ async def resolve_link(
 ) -> ResolvedLinkData:
 
     short_code = short_code.lower()
-
     print(f"[REDIRECT] Resolving short code: {short_code}")
 
     # 1. Try Redis first
@@ -60,52 +60,48 @@ async def resolve_link(
 
     if cached_link is not None:
         print(f"[CACHE HIT] {short_code}")
+        link = cached_link
 
-        validate_link_state(cached_link)
-        await increment_click_count(
-            redis=redis,
-            short_code=cached_link.short_code,
-        )
+    else:
+        print(f"[CACHE MISS] {short_code}")
 
-        print(f"[REDIRECT] Resolved '{short_code}' from Redis")
+        # 2. Redis miss -> PostgreSQL
+        try:
+            print(f"[DB LOOKUP] Searching PostgreSQL for '{short_code}'")
 
-        return cached_link
+            link = await get_link_by_short_code(
+                db=db,
+                short_code=short_code,
+            )
 
-    print(f"[CACHE MISS] {short_code}")
+        except SQLAlchemyError as exc:
+            print(f"[DB ERROR] Failed lookup for '{short_code}'")
+            raise LinkLookupError() from exc
 
-    # 2. Redis miss -> PostgreSQL
-    try:
-        print(f"[DB LOOKUP] Searching PostgreSQL for '{short_code}'")
+        # 3. Short code doesn't exist
+        if link is None:
+            print(f"[DB MISS] '{short_code}' does not exist")
+            raise LinkNotFoundError()
 
-        link = await get_link_by_short_code(
-            db=db,
-            short_code=short_code,
-        )
+        print(f"[DB HIT] Found '{short_code}' in PostgreSQL")
 
-    except SQLAlchemyError as exc:
-        print(f"[DB ERROR] Failed lookup for '{short_code}'")
-        raise LinkLookupError() from exc
-
-    # 3. Short code doesn't exist
-    if link is None:
-        print(f"[DB MISS] '{short_code}' does not exist")
-        raise LinkNotFoundError()
-
-    print(f"[DB HIT] Found '{short_code}' in PostgreSQL")
-
-    # 4. Validate before caching
+    # 4. Common validation for both paths
     validate_link_state(link)
-    await increment_click_count(
-        redis=redis,
-        short_code=link.short_code,
-    )
 
-    # 5. Cache DB result
-    await cache_link(
+    # 5. Cache only if resolved from PostgreSQL
+    if cached_link is None:
+        await cache_link(
+            redis=redis,
+            link=link,
+        )
+        print(f"[CACHE SET] Cached '{short_code}'")
+
+    # 6. Increment total clicks and mark dirty in Redis
+    await increment_click_count(
         redis=redis,
         link=link,
     )
 
-    print(f"[CACHE SET] Cached '{short_code}'")
+    print(f"[REDIRECT] Resolved '{short_code}'")
 
     return link
