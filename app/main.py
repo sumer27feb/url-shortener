@@ -23,3 +23,6 @@ def home():
 
 #python -m uvicorn app.main:app --reload
 #python -m app.workers.click_flush_worker
+#python -m uvicorn app.main:app --port 8001 --loop asyncio:SelectorEventLoop
+#python -m uvicorn app.main:app --port 8002 --loop asyncio:SelectorEventLoop
+#docker run -d --name url-shortener-nginx -p 127.0.0.1:8080:80 --mount "type=bind,source=%cd%\nginx\default.conf,target=/etc/nginx/conf.d/default.conf,readonly" nginx:stable

@@ -151,6 +151,7 @@ async def create_link(
             payload=payload,
             short_code=short_code,
             is_custom_alias=False,
+            password_hash=password_hash,
         )
 
         try:
