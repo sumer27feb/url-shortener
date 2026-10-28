@@ -18,6 +18,7 @@ from app.services.link_stats_service import (
     LinkStatsLookupError,
     get_link_stats,
 )
+from app.api.rate_limit import enforce_create_rate_limit
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -31,7 +32,9 @@ def health():
     return {"message": "links API is healthy"}
 
 @router.post("/create", response_model=CreateLinkResponse,
-             status_code=status.HTTP_201_CREATED)
+            status_code=status.HTTP_201_CREATED,
+            dependencies=[Depends(enforce_create_rate_limit)]
+        )
 async def create_link(
     payload: CreatedLinkRequest,
     db: AsyncSession = Depends(get_db),
