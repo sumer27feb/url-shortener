@@ -11,6 +11,7 @@ from alembic import context
 from app.core.config import DATABASE_URL
 from app.db.base import Base
 from app.db.models.links import Link
+from app.db.models.click_events import ClickEvent
 
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(

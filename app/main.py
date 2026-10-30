@@ -2,13 +2,25 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends
 
 from app.cache.redis import close_redis
+from app.kafka.producer import ClickEventPublisher
 from app.api.links import router as links_router
 from app.api.redirects import router as redirects_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    yield
-    await close_redis()
+    publisher = ClickEventPublisher()
+    publisher.start()
+    print("[KAFKA DEBUG] Producer startup completed", flush=True)
+
+    app.state.click_event_publisher = publisher
+
+    try:
+        yield
+    finally:
+        try:
+            await publisher.close()
+        finally:
+            await close_redis()
 
 app = FastAPI(
     lifespan=lifespan,

@@ -25,4 +25,7 @@ class ResolvedLinkData(BaseModel):
     click_count: int
 
     password_hash: str | None = None
+    is_custom_alias: bool
+    created_at: datetime
+    campaign_name: str | None = None
 

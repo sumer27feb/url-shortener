@@ -32,14 +32,17 @@ async def get_link_by_short_code(
         return None
 
     return ResolvedLinkData(
-        short_code=link.short_code,
-        destination_url=link.destination_url,
-        expires_at=link.expires_at,
-        revoked_at=link.revoked_at,
-        deleted_at=link.deleted_at,
-        click_count=link.click_count,
-        password_hash=link.password_hash,
-    )
+    short_code=link.short_code,
+    destination_url=link.destination_url,
+    is_custom_alias=link.is_custom_alias,
+    created_at=link.created_at,
+    expires_at=link.expires_at,
+    revoked_at=link.revoked_at,
+    deleted_at=link.deleted_at,
+    click_count=link.click_count,
+    password_hash=link.password_hash,
+    campaign_name=link.campaign_name,
+)
 
 async def update_click_count(
         db:AsyncSession,

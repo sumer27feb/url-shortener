@@ -29,3 +29,19 @@ CLICK_FLUSH_INTERVAL_SECONDS = int(
 CLICK_FLUSH_BATCH_SIZE = int(
     os.getenv("CLICK_FLUSH_BATCH_SIZE", "100")
 )
+
+# Kafka
+KAFKA_BOOTSTRAP_SERVERS = os.getenv(
+    "KAFKA_BOOTSTRAP_SERVERS",
+    "127.0.0.1:9092",
+)
+
+KAFKA_CLICKS_TOPIC = os.getenv(
+    "KAFKA_CLICKS_TOPIC",
+    "urlshortener.clicks.v1",
+)
+
+KAFKA_CLICK_CONSUMER_GROUP = os.getenv(
+    "KAFKA_CLICK_CONSUMER_GROUP",
+    "urlshortener-click-analytics-v1",
+)
