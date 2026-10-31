@@ -1,9 +1,15 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Query
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.links import CreateLinkResponse, CreatedLinkRequest
 from app.schemas.link_stats import LinkStatsResponse
+from app.schemas.link_analytics import LinkAnalyticsResponse
+from app.services.link_analytics_service import (
+    get_link_analytics,
+    LinkAnalyticsNotFoundError,
+    LinkAnalyticsLookupError,
+)
 from app.cache.redis import get_redis
 from app.db.session import get_db
 from app.services.link_service import (
@@ -109,6 +115,37 @@ async def read_link_stats(
         short_code=short_code.lower(),
         total_clicks=total_clicks,
     )
+
+
+@router.get(
+    "/{short_code}/analytics",
+    response_model=LinkAnalyticsResponse,
+)
+async def read_link_analytics(
+    short_code: str,
+    days: int = Query(default=7, ge=1, le=30),
+    db: AsyncSession = Depends(get_db),
+) -> LinkAnalyticsResponse:
+
+    try:
+        return await get_link_analytics(
+            short_code=short_code,
+            days=days,
+            db=db,
+        )
+
+    except LinkAnalyticsNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Short link not found.",
+        )
+
+    except LinkAnalyticsLookupError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Unable to retrieve link analytics.",
+        )
+
 
 
 @router.get("/db-test")
